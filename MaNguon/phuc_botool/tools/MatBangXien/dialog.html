@@ -96,7 +96,13 @@
   <div class="row"><label class="l">Chiều ngang</label>
     <select id="width"><option>3000</option><option>4000</option><option selected>6000</option><option>8000</option></select> px
     <button onclick="call('export')" style="margin-left:auto">Xuất PNG…</button></div>
-  <div class="row"><span class="hint">Chất ảnh có hạt: mở PNG trong Photoshop, chạy tool "Hạt ảnh" trong Tool Launcher.</span></div>
+  <div class="row"><label class="l">Nét khi xuất PNG</label>
+    <select id="lineScale"><option value="1" selected>Tinh, mảnh (1×)</option><option value="1.5">Vừa (1,5×)</option><option value="2">Dày như mặc định SketchUp (2×)</option></select></div>
+  <div class="row"><label class="l">PDF: nét thường</label><input type="number" id="pdfLine" value="0.05" min="0.01" max="1" step="0.01"> mm
+    <label style="margin-left:6px">nét cắt</label><input type="number" id="pdfCut" value="0.25" min="0.01" max="2" step="0.05"> mm</div>
+  <div class="row"><button onclick="call('exportpdf')">Xuất PDF vector…</button>
+    <span class="hint">Phóng to bao nhiêu nét vẫn mảnh, in rõ (cần SketchUp Pro).</span></div>
+  <div class="row"><span class="hint">Mẹo nét tinh: kéo "Nét mạnh" về 1, "Nét theo độ sâu" về 0, xuất PNG 8000 px với nét 1×. Chất ảnh có hạt: mở PNG trong Photoshop, chạy tool "Hạt ảnh" trong Tool Launcher.</span></div>
 </fieldset>
 
 <div class="bottom">
@@ -109,7 +115,7 @@
 
 <script>
 var PRESETS = [
-  { id: 'ref',  name: 'Như ref: nền đen, phần cắt trắng', bg: '#111111', line: '#bdbdbd', fillOn: true, fill: '#ffffff', cut: '#ffffff', mode: 1, profile: 2, cutw: 3, depth: 2, fog: false },
+  { id: 'ref',  name: 'Như ref: nền đen, phần cắt trắng', bg: '#111111', line: '#bdbdbd', fillOn: true, fill: '#ffffff', cut: '#ffffff', mode: 1, profile: 1, cutw: 2, depth: 0, fog: false },
   { id: 'den2', name: 'Nền đen, nét mảnh nhạt hơn',       bg: '#0b0b0b', line: '#8a8a8a', fillOn: true, fill: '#ffffff', cut: '#ffffff', mode: 1, profile: 1, cutw: 2, depth: 0, fog: true },
   { id: 'chi',  name: 'Vẽ tay chì: nền giấy, nét đen mảnh, cắt đậm', bg: '#f7f6f2', line: '#3a3a3a', fillOn: true, fill: '#ffffff', cut: '#111111', mode: 1, profile: 2, cutw: 4, depth: 3, fog: true },
   { id: 'butbi', name: 'Bút bi xanh: nền giấy, nét xanh, cắt đậm', bg: '#f7f6f2', line: '#34479a', fillOn: true, fill: '#ffffff', cut: '#1b2a6b', mode: 1, profile: 2, cutw: 5, depth: 2, fog: false },
@@ -133,7 +139,7 @@ function params() {
     fill: $('fill').value, cut: $('cut').value, mode: parseInt($('mode').value, 10),
     profile: parseInt($('profile').value, 10), cutw: parseInt($('cutw').value, 10),
     depth: parseInt($('depth').value, 10), fog: $('fog').checked,
-    width: parseInt($('width').value, 10), live: $('live').checked
+    width: parseInt($('width').value, 10), lineScale: $('lineScale').value, pdfLine: $('pdfLine').value, pdfCut: $('pdfCut').value, live: $('live').checked
   };
 }
 
@@ -218,7 +224,7 @@ function init(saved) {
   chips('dirChips', DIRS, function (v) { dir = v[0]; changed(); }, function (v) { return v[1]; });
   applyPreset('ref');
   if (saved) {
-    ['height', 'ref', 'angle', 'length', 'rot', 'preset', 'bg', 'line', 'fill', 'cut', 'profile', 'cutw', 'depth', 'width'].forEach(function (k) {
+    ['height', 'ref', 'angle', 'length', 'rot', 'preset', 'bg', 'line', 'fill', 'cut', 'profile', 'cutw', 'depth', 'width', 'lineScale', 'pdfLine', 'pdfCut'].forEach(function (k) {
       if (saved[k] !== undefined && saved[k] !== null) $(k).value = saved[k];
     });
     if (saved.mode) $('mode').value = String(saved.mode);

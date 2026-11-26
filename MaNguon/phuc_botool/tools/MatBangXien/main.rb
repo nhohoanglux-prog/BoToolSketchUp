@@ -2,7 +2,7 @@
 # @name: Mặt bằng xiên
 # @group: Diễn họa
 # @desc: Biến mô hình thành ảnh mặt bằng xiên kiểu axonometric: cắt ngang, phần cắt tô màu, nền đen hoặc vẽ tay, xuất PNG.
-# @version: 1.3.0
+# @version: 1.4.0
 # @date: 2026-11-26
 # @icon: layers
 # @module: PhucBoTool::MatBangXien
@@ -253,14 +253,16 @@ module PhucBoTool
     end
 
     # ---------- xuất PNG ----------
-    def self.export(p)
+    # fmt = 'png' (ảnh) hoặc 'pdf' (vector: nét giữ mảnh khi phóng to, độ dày tính bằng mm)
+    def self.export(p, fmt = 'png')
       copy = find_copy
       return err('Chưa có mặt bằng xiên. Bấm "Dựng mặt bằng xiên" trước.') unless copy
       dir = model.path.to_s.empty? ? File.join(ENV['USERPROFILE'] || Dir.home, 'Desktop') : File.dirname(model.path)
       base = model.title.to_s.empty? ? 'MatBangXien' : "#{model.title}_MatBangXien"
-      path = UI.savepanel('Lưu ảnh PNG', dir, "#{base}.png")
+      ext = fmt == 'pdf' ? 'pdf' : 'png'
+      path = UI.savepanel(fmt == 'pdf' ? 'Lưu file PDF' : 'Lưu ảnh PNG', dir, "#{base}.#{ext}")
       return unless path
-      path += '.png' unless path =~ /\.png\z/i
+      path += ".#{ext}" unless path =~ /\.#{ext}\z/i
       view = model.active_view
       w = [p['width'].to_i, 500].max
       h = (w * view.vpheight.to_f / view.vpwidth.to_f).round
@@ -271,8 +273,8 @@ module PhucBoTool
         place(copy, p, hm)
         model.commit_operation
         view.invalidate
-        f = hs.size > 1 ? path.sub(/\.png\z/i, format('_cat%.2fm.png', hm).sub('.', ',')) : path
-        ok = view.write_image(filename: f, width: w, height: h, antialias: true, transparent: false)
+        f = hs.size > 1 ? path.sub(/\.#{ext}\z/i, format("_cat%.2fm.#{ext}", hm).sub('.', ',')) : path
+        ok = fmt == 'pdf' ? write_pdf(f, p) : write_png(view, f, w, h, p)
         files << f if ok
       end
       if hs.size > 1
@@ -280,9 +282,41 @@ module PhucBoTool
         place(copy, p, hs[0])
         model.commit_operation
       end
-      return err('Không xuất được ảnh. Thử chiều ngang nhỏ hơn (ví dụ 4000 px).') if files.empty?
-      r = UI.messagebox("Đã xuất #{files.size} ảnh (#{w} x #{h} px):\n#{files.join("\n")}\n\nMở thư mục chứa ảnh?", MB_YESNO)
+      if files.empty?
+        return err('Không xuất được PDF. Bản SketchUp Make (miễn phí) không có xuất PDF; thử xuất PNG.') if fmt == 'pdf'
+        return err('Không xuất được ảnh. Thử chiều ngang nhỏ hơn (ví dụ 4000 px).')
+      end
+      size = fmt == 'pdf' ? 'PDF vector' : "#{w} x #{h} px"
+      r = UI.messagebox("Đã xuất #{files.size} file (#{size}):\n#{files.join("\n")}\n\nMở thư mục chứa ảnh?", MB_YESNO)
       UI.openURL('file:///' + File.dirname(files[0]).tr('\\', '/')) if r == IDYES
+    end
+
+    # PNG: scale_factor = hệ số nhân độ dày nét/chữ khi ảnh lớn hơn màn hình (SketchUp 2019.2+ mặc định 2 → nét dày).
+    # 1 = nét mảnh nhất. Khoá lạ bị SketchUp bỏ qua; lỗi thì xuất lại không có khoá đó.
+    def self.write_png(view, f, w, h, p)
+      sf = num(p['lineScale'], 1.0)
+      opts = { filename: f, width: w, height: h, antialias: true, transparent: false, compression: 0.9 }
+      begin
+        view.write_image(opts.merge(scale_factor: sf))
+      rescue StandardError
+        view.write_image(opts)
+      end
+    end
+
+    # PDF vector (SketchUp Pro, Windows). Độ dày nét theo mm, không theo màn hình (match_screen_* = false).
+    # Khoá theo tài liệu "Exporter Options" của SketchUp; số phải là Float, khoá sai bị bỏ qua. CHƯA kiểm chứng.
+    def self.write_pdf(f, p)
+      mm = ->(v, d) { num(v, d) / 25.4 } # SketchUp tính độ dày theo inch
+      opts = {
+        output_profile_lines: true, output_section_lines: true, edge_extensions: false,
+        match_screen_profiles: false, match_screen_section: false, match_screen_extensions: false,
+        line_width: mm.call(p['pdfLine'], 0.05).to_f, line_width_section: mm.call(p['pdfCut'], 0.25).to_f,
+        full_scale: false, map_fonts: true, extension_length: 0.0
+      }
+      model.export(f, opts)
+    rescue StandardError => e
+      puts "PDF: #{e.message}"
+      false
     end
 
     # ---------- chọn cao độ ----------
@@ -440,7 +474,8 @@ module PhucBoTool
       @dlg.add_action_callback('update') { |_c, a| safe(a) { |p| update(p) if find_copy } }
       @dlg.add_action_callback('style') { |_c, a| safe(a) { |p| apply_style(p) } }
       @dlg.add_action_callback('frame') { |_c, a| safe(a) { |_p| c = find_copy; c ? frame(c) : err('Chưa có mặt bằng xiên.') } }
-      @dlg.add_action_callback('export') { |_c, a| safe(a) { |p| export(p) } }
+      @dlg.add_action_callback('export') { |_c, a| safe(a) { |p| export(p, 'png') } }
+      @dlg.add_action_callback('exportpdf') { |_c, a| safe(a) { |p| export(p, 'pdf') } }
       @dlg.add_action_callback('pick') { |_c, a| safe(a) { |p| pick(p) } }
       @dlg.add_action_callback('fromsp') { |_c, a| safe(a) { |p| from_section(p) } }
       @dlg.add_action_callback('restore') { |_c, _a| begin; restore; rescue StandardError => e; err("Có lỗi: #{e.message}"); end }

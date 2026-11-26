@@ -61,6 +61,11 @@ Mô phỏng kiểm thử: Ruby thường + mock Sketchup::Http/UI (không nằm 
 5. Tự cập nhật CLAUDE.md + CHANGELOG.md sau mỗi việc, không cần nhắc.
 
 ## Tool "Mặt bằng xiên" (tools/MatBangXien, module PhucBoTool::MatBangXien)
+v1.4.0 (2026-11-26): NGƯỜI DÙNG ĐÃ CHẠY ĐƯỢC trên SketchUp thật (ảnh nền đen nét trắng ra đúng), phàn nàn nét dày, muốn
+nét tinh gọn + xuất rõ (PDF). write_png: write_image thêm scale_factor (ô "Nét khi xuất", mặc định 1; SketchUp 2019.2+
+mặc định nhân nét 2× khi xuất ảnh lớn; khoá CHƯA kiểm chứng, lỗi thì xuất lại không có khoá). write_pdf: model.export PDF
+với khoá Exporter Options Windows (match_screen_* false, line_width/line_width_section = mm/25.4 Float, full_scale false);
+cần SketchUp Pro; CHƯA kiểm chứng màu nền/tô cắt trong PDF. Preset "Như ref" giờ profile 1, cutw 2, depth 0.
 v1.3.0 (2026-11-26): chuyển vào Bộ Tool, bỏ khối tự cập nhật riêng và menu riêng; link "Mở Bộ Tool SketchUp" trong hộp thoại.
 Lịch sử: v1.2.0 (2026-11-26): chuyển từ kho BoToolPhotoshop (thư mục 3_SketchUp) sang kho này; người dùng phải gỡ bản cũ và
 cài lại .rbz một lần (bản v1.1.0 cũ trỏ cập nhật về kho Photoshop, nay đã xoá thư mục đó). CHƯA chạy trên SketchUp thật.
