@@ -1,6 +1,6 @@
 # encoding: UTF-8
 # @name: Bộ Tool SketchUp
-# @version: 1.0.0
+# @version: 1.1.0
 # @date: 2026-11-26
 #
 # Bảng tool giống panel Tool Launcher của Photoshop: quét tools/*/main.rb, đọc các dòng @name/@group/@desc/
@@ -157,7 +157,10 @@ module PhucBoTool
       url = info['base'] + 'MaNguon/' + f.split('/').map { |x| x.gsub(' ', '%20') }.join('/')
       http_get(url) do |body|
         got[f] = body
+        js("showMsg(#{"Đang tải #{got.size}/#{files.size} file…".to_json}, false)")
+        Sketchup.status_text = "Bộ Tool SketchUp: đang tải bản mới #{got.size}/#{files.size} file"
         next unless got.size == files.size
+        Sketchup.status_text = ''
         if got.values.any?(&:nil?)
           js("showMsg(#{'Tải không đủ file, chưa đổi gì. Thử lại sau.'.to_json}, true)")
           next

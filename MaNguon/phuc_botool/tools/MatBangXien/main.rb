@@ -2,7 +2,7 @@
 # @name: Mặt bằng xiên
 # @group: Diễn họa
 # @desc: Biến mô hình thành ảnh mặt bằng xiên kiểu axonometric: cắt ngang, phần cắt tô màu, nền đen hoặc vẽ tay, xuất PNG.
-# @version: 1.4.0
+# @version: 1.5.0
 # @date: 2026-11-26
 # @icon: layers
 # @module: PhucBoTool::MatBangXien
@@ -170,45 +170,112 @@ module PhucBoTool
       view.invalidate
     end
 
+    # ---------- chạy từng bước + báo tiến độ ----------
+    # Ruby chạy trên luồng chính nên SketchUp không vẽ lại hộp thoại khi đang bận. Mỗi bước chạy trong
+    # UI.start_timer riêng: trước mỗi bước báo tên bước (thanh tiến độ trong hộp thoại + thanh trạng thái
+    # dưới đáy SketchUp), nhả 0,05 giây cho màn hình vẽ lại rồi mới làm. Bước trả về false = dừng (đã báo lý do).
+    def self.run_steps(title, steps, &done)
+      return err('Đang chạy, đợi xong đã.') if @busy
+      @busy = true
+      n = steps.size
+      js("progStart(#{title.to_json}, #{n})")
+      idx = 0
+      runner = nil
+      finish = lambda do |ok, text|
+        @busy = false
+        Sketchup.status_text = ''
+        if ok
+          js("progDone(#{text.to_json})")
+        else
+          js("progFail(#{text.to_json})")
+        end
+      end
+      runner = lambda do
+        label = steps[idx][0]
+        js("progStep(#{label.to_json}, #{idx}, #{n})")
+        Sketchup.status_text = "#{title}: #{label} (bước #{idx + 1}/#{n})"
+        UI.start_timer(0.05, false) do
+          begin
+            r = steps[idx][1].call
+            if r == false
+              finish.call(false, @stop_msg || 'Đã dừng.')
+            else
+              idx += 1
+              if idx < n
+                runner.call
+              else
+                text = done ? done.call : 'Xong.'
+                finish.call(true, text)
+              end
+            end
+          rescue StandardError => e
+            if @op_open
+              begin; model.abort_operation; rescue StandardError; end
+              @op_open = false
+            end
+            puts e.backtrace.first(5).join("\n")
+            finish.call(false, "Lỗi ở bước \"#{label}\": #{e.message}")
+          end
+        end
+      end
+      @stop_msg = nil
+      runner.call
+    end
+
+    def self.stop_with(text)
+      @stop_msg = text
+      false
+    end
+
     # ---------- dựng / cập nhật ----------
     def self.build(p)
-      if model.active_path && !model.active_path.empty?
-        return err('Bạn đang ở trong một group/component. Bấm ra ngoài (thoát khỏi group) rồi bấm Dựng lại.')
-      end
-      src = source_entities
-      return err('Không có gì để dựng. Chọn các khối muốn dựng (hoặc bỏ chọn hết để dựng cả mô hình).') if src.empty?
-      save_state
-      model.start_operation('Dựng mặt bằng xiên', true)
-      begin
-        old = find_copy
-        old.erase! if old
-        begin; model.entities.active_section_plane = nil; rescue StandardError; end
-        bb = bounds_of(src)
-        tmp = model.entities.add_group(src)
-        copy = tmp.copy
-        tmp.explode
-        copy.make_unique
-        copy.name = 'Mặt bằng xiên'
-        copy.set_attribute(DICT, 'copy', true)
-        copy.set_attribute(DICT, 'zmin', bb.min.z.to_f)
-        copy.set_attribute(DICT, 'zmax', bb.max.z.to_f)
-        diag = bb.diagonal.to_f
-        copy.set_attribute(DICT, 'ox', bb.width.to_f + bb.depth.to_f + diag * 2)
-        copy.set_attribute(DICT, 'cx', bb.center.x.to_f)
-        copy.set_attribute(DICT, 'cy', bb.center.y.to_f)
-        sp = copy.entities.add_section_plane([Geom::Point3d.new(0, 0, 0), Geom::Vector3d.new(0, 0, -1)])
-        sp.set_attribute(DICT, 'cut', true)
-        place(copy, p, heights(p)[0])
-        model.commit_operation
-      rescue StandardError => e
-        model.abort_operation
-        return err("Lỗi khi dựng: #{e.message}")
-      end
-      model.selection.clear
-      apply_style(p)
-      frame(find_copy)
-      send_info
-      msg("Đã dựng xong (bản gốc vẫn nguyên, bản xiên nằm bên phải). Ctrl+Z để bỏ.")
+      st = {}
+      steps = [
+        ['Kiểm tra vùng chọn', lambda {
+          if model.active_path && !model.active_path.empty?
+            return stop_with('Bạn đang ở trong một group/component. Bấm ra ngoài (thoát khỏi group) rồi bấm Dựng lại.')
+          end
+          st[:src] = source_entities
+          return stop_with('Không có gì để dựng. Chọn các khối muốn dựng (hoặc bỏ chọn hết để dựng cả mô hình).') if st[:src].empty?
+          st[:bb] = bounds_of(st[:src])
+          save_state
+          true
+        }],
+        ['Chép mô hình (mô hình lớn có thể mất vài chục giây)', lambda {
+          model.start_operation('Dựng mặt bằng xiên', true)
+          @op_open = true
+          old = find_copy
+          old.erase! if old
+          begin; model.entities.active_section_plane = nil; rescue StandardError; end
+          tmp = model.entities.add_group(st[:src])
+          st[:copy] = tmp.copy
+          tmp.explode
+          st[:copy].make_unique
+          true
+        }],
+        ['Xiên mặt bằng và đặt mặt cắt', lambda {
+          copy = st[:copy]
+          bb = st[:bb]
+          copy.name = 'Mặt bằng xiên'
+          copy.set_attribute(DICT, 'copy', true)
+          copy.set_attribute(DICT, 'zmin', bb.min.z.to_f)
+          copy.set_attribute(DICT, 'zmax', bb.max.z.to_f)
+          diag = bb.diagonal.to_f
+          copy.set_attribute(DICT, 'ox', bb.width.to_f + bb.depth.to_f + diag * 2)
+          copy.set_attribute(DICT, 'cx', bb.center.x.to_f)
+          copy.set_attribute(DICT, 'cy', bb.center.y.to_f)
+          sp = copy.entities.add_section_plane([Geom::Point3d.new(0, 0, 0), Geom::Vector3d.new(0, 0, -1)])
+          sp.set_attribute(DICT, 'cut', true)
+          place(copy, p, heights(p)[0])
+          model.commit_operation
+          @op_open = false
+          model.selection.clear
+          true
+        }],
+        ['Đổi kiểu hiển thị', lambda { apply_style(p); true }],
+        ['Canh khung nhìn từ trên', lambda { frame(find_copy); send_info; true }]
+      ]
+      run_steps('Dựng mặt bằng xiên', steps) { 'Đã dựng xong (bản gốc vẫn nguyên, bản xiên nằm bên phải). Ctrl+Z để bỏ.' }
     end
 
     # đặt độ xiên + mặt cắt cho cao độ h (mét)
@@ -268,27 +335,42 @@ module PhucBoTool
       h = (w * view.vpheight.to_f / view.vpwidth.to_f).round
       hs = p['cutOn'] == false ? [heights(p)[0]] : heights(p)
       files = []
-      hs.each do |hm|
-        model.start_operation('Xuất mặt bằng xiên', true, false, true)
-        place(copy, p, hm)
-        model.commit_operation
-        view.invalidate
-        f = hs.size > 1 ? path.sub(/\.#{ext}\z/i, format("_cat%.2fm.#{ext}", hm).sub('.', ',')) : path
-        ok = fmt == 'pdf' ? write_pdf(f, p) : write_png(view, f, w, h, p)
-        files << f if ok
+      what = fmt == 'pdf' ? 'PDF' : 'ảnh'
+      steps = hs.each_with_index.map do |hm, k|
+        label = "Xuất #{what} #{k + 1}/#{hs.size}" + (p['cutOn'] == false ? '' : " (cắt ở #{format('%.2f', hm).sub('.', ',')} m)") +
+                (fmt == 'pdf' ? '' : ", #{w} px")
+        [label, lambda {
+          model.start_operation('Xuất mặt bằng xiên', true, false, true)
+          place(copy, p, hm)
+          model.commit_operation
+          view.invalidate
+          f = hs.size > 1 ? path.sub(/\.#{ext}\z/i, format("_cat%.2fm.#{ext}", hm).sub('.', ',')) : path
+          ok = fmt == 'pdf' ? write_pdf(f, p) : write_png(view, f, w, h, p)
+          files << f if ok
+          true
+        }]
       end
       if hs.size > 1
-        model.start_operation('Cập nhật mặt bằng xiên', true, false, true)
-        place(copy, p, hs[0])
-        model.commit_operation
+        steps << ['Trả mặt cắt về cao độ đầu', lambda {
+          model.start_operation('Cập nhật mặt bằng xiên', true, false, true)
+          place(copy, p, hs[0])
+          model.commit_operation
+          true
+        }]
       end
-      if files.empty?
-        return err('Không xuất được PDF. Bản SketchUp Make (miễn phí) không có xuất PDF; thử xuất PNG.') if fmt == 'pdf'
-        return err('Không xuất được ảnh. Thử chiều ngang nhỏ hơn (ví dụ 4000 px).')
+      steps << ['Kiểm tra file đã xuất', lambda {
+        next true unless files.empty?
+        next stop_with('Không xuất được PDF. Bản SketchUp Make (miễn phí) không có xuất PDF; thử xuất PNG.') if fmt == 'pdf'
+        stop_with('Không xuất được ảnh. Thử chiều ngang nhỏ hơn (ví dụ 4000 px).')
+      }]
+      run_steps(fmt == 'pdf' ? 'Xuất PDF' : 'Xuất PNG', steps) do
+        size = fmt == 'pdf' ? 'PDF vector' : "#{w} x #{h} px"
+        UI.start_timer(0.2, false) do
+          r = UI.messagebox("Đã xuất #{files.size} file (#{size}):\n#{files.join("\n")}\n\nMở thư mục chứa file?", MB_YESNO)
+          UI.openURL('file:///' + File.dirname(files[0]).tr('\\', '/')) if r == IDYES
+        end
+        "Đã xuất #{files.size} file (#{size}): #{File.basename(files[0])}#{files.size > 1 ? '…' : ''}"
       end
-      size = fmt == 'pdf' ? 'PDF vector' : "#{w} x #{h} px"
-      r = UI.messagebox("Đã xuất #{files.size} file (#{size}):\n#{files.join("\n")}\n\nMở thư mục chứa ảnh?", MB_YESNO)
-      UI.openURL('file:///' + File.dirname(files[0]).tr('\\', '/')) if r == IDYES
     end
 
     # PNG: scale_factor = hệ số nhân độ dày nét/chữ khi ảnh lớn hơn màn hình (SketchUp 2019.2+ mặc định 2 → nét dày).
@@ -471,7 +553,20 @@ module PhucBoTool
       @dlg.add_action_callback('tools') { |_c, _a| PhucBoTool.show if PhucBoTool.respond_to?(:show) }
       @dlg.add_action_callback('info') { |_c, _a| send_info }
       @dlg.add_action_callback('build') { |_c, a| safe(a) { |p| build(p) } }
-      @dlg.add_action_callback('update') { |_c, a| safe(a) { |p| update(p) if find_copy } }
+      @dlg.add_action_callback('update') do |_c, a|
+        safe(a) do |p|
+          if @busy
+            nil
+          elsif find_copy
+            Sketchup.status_text = 'Mặt bằng xiên: đang cập nhật bản xiên…'
+            update(p)
+            Sketchup.status_text = ''
+            msg('Đã cập nhật bản xiên.')
+          else
+            msg('')
+          end
+        end
+      end
       @dlg.add_action_callback('style') { |_c, a| safe(a) { |p| apply_style(p) } }
       @dlg.add_action_callback('frame') { |_c, a| safe(a) { |_p| c = find_copy; c ? frame(c) : err('Chưa có mặt bằng xiên.') } }
       @dlg.add_action_callback('export') { |_c, a| safe(a) { |p| export(p, 'png') } }

@@ -27,6 +27,26 @@
   #msg { min-height: 18px; margin: 6px 0 0; font-size: 12px; }
   #msg.err { color: #c0392b; }
   #msg.ok { color: #1e7d32; }
+  /* khung tiến độ: dính đáy hộp thoại */
+  #prog { display: none; position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 2px solid #2b6cd4; padding: 8px 12px 10px; box-shadow: 0 -3px 10px rgba(0,0,0,.12); z-index: 10; }
+  #prog.ok { border-top-color: #1e8e3e; }
+  #prog.fail { border-top-color: #c0392b; }
+  #prog .ph { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+  #prog .ph b { flex: 1; }
+  #progTime { color: #777; font-size: 11px; }
+  #prog .bar { height: 8px; background: #e6e6e6; border-radius: 4px; margin: 6px 0 5px; overflow: hidden; }
+  #progBar { height: 100%; width: 0; background: #2b6cd4; border-radius: 4px; transition: width .3s; }
+  #prog.ok #progBar { background: #1e8e3e; }
+  #prog.fail #progBar { background: #c0392b; }
+  #progStep { color: #333; }
+  #prog.fail #progStep { color: #c0392b; }
+  .spin { width: 14px; height: 14px; border: 2px solid #c9d9f5; border-top-color: #2b6cd4; border-radius: 50%; animation: sp .8s linear infinite; flex: none; }
+  #prog.ok .spin, #prog.fail .spin { display: none; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  #progClose { display: none; padding: 0 6px; }
+  #prog.ok #progClose, #prog.fail #progClose { display: inline-block; }
+  body.busy fieldset, body.busy .bottom { opacity: .55; pointer-events: none; }
+  body.progOn { padding-bottom: 96px; }
   .val { width: 22px; text-align: right; color: #444; }
   .bottom { display: flex; gap: 6px; flex-wrap: wrap; }
 </style>
@@ -143,7 +163,36 @@ function params() {
   };
 }
 
+var BUSY = false, T0 = 0, TICK = null, HIDE = null;
+function progStart(title, n) {
+  BUSY = true; T0 = Date.now(); clearTimeout(HIDE);
+  document.body.className = 'busy progOn';
+  $('prog').className = ''; $('prog').style.display = 'block';
+  $('progTitle').textContent = title + '…';
+  $('progBar').style.width = '3%';
+  $('progStep').textContent = 'Chuẩn bị…';
+  clearInterval(TICK);
+  TICK = setInterval(function () { $('progTime').textContent = Math.round((Date.now() - T0) / 1000) + ' giây'; }, 500);
+}
+function progStep(label, i, n) {
+  $('progStep').textContent = 'Bước ' + (i + 1) + '/' + n + ': ' + label;
+  $('progBar').style.width = Math.max(3, Math.round((i + 0.5) / n * 100)) + '%';
+}
+function progEnd(cls, title, text) {
+  BUSY = false; clearInterval(TICK);
+  document.body.className = 'progOn';
+  $('prog').className = cls;
+  $('progTitle').textContent = title;
+  $('progBar').style.width = '100%';
+  $('progStep').textContent = text;
+  $('progTime').textContent = 'hết ' + Math.round((Date.now() - T0) / 1000) + ' giây';
+}
+function progDone(text) { progEnd('ok', '✓ Xong', text); showMsg(text, false); HIDE = setTimeout(progHide, 15000); }
+function progFail(text) { progEnd('fail', '✕ Chưa làm được', text); showMsg(text, true); }
+function progHide() { $('prog').style.display = 'none'; document.body.className = BUSY ? 'busy' : ''; }
+
 function call(name) {
+  if (BUSY) return;
   showMsg('', false);
   sketchup[name](JSON.stringify(params()));
 }
@@ -209,7 +258,11 @@ function changed() {
   refreshMarks();
   if (!$('live').checked) return;
   clearTimeout(timer);
-  timer = setTimeout(function () { sketchup.update(JSON.stringify(params())); }, 400);
+  timer = setTimeout(function () {
+    if (BUSY) return;
+    showMsg('Đang cập nhật bản xiên…', false);
+    setTimeout(function () { sketchup.update(JSON.stringify(params())); }, 30);
+  }, 400);
 }
 
 function init(saved) {
@@ -246,5 +299,11 @@ function init(saved) {
 
 window.onload = function () { sketchup.ready(''); };
 </script>
+<div id="prog">
+  <div class="ph"><span class="spin"></span><b id="progTitle">Đang chạy…</b><span id="progTime"></span>
+    <button id="progClose" onclick="progHide()" title="Ẩn khung này">✕</button></div>
+  <div class="bar"><div id="progBar"></div></div>
+  <div id="progStep"></div>
+</div>
 </body>
 </html>

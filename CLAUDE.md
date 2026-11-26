@@ -60,7 +60,16 @@ Mô phỏng kiểm thử: Ruby thường + mock Sketchup::Http/UI (không nằm 
    Chỉ gửi zip khi cài lần đầu hoặc khi đổi phuc_botool.rb (file nạp).
 5. Tự cập nhật CLAUDE.md + CHANGELOG.md sau mỗi việc, không cần nhắc.
 
+## BÁO TIẾN ĐỘ (người dùng yêu cầu 2026-11-26, BẮT BUỘC cho mọi tool chạy lâu)
+Người dùng không biết tool có đang chạy không. Ruby chạy trên luồng chính nên hộp thoại không vẽ lại khi bận:
+chia việc thành các bước, chạy bằng run_steps(title, [[tên bước, lambda]]) { chữ báo xong } (xem MatBangXien/main.rb):
+mỗi bước trong UI.start_timer(0.05) riêng, trước bước gọi js progStep + Sketchup.status_text; bước trả false (stop_with)
+= dừng có lý do; lỗi thì abort_operation nếu @op_open. Phía HTML chép khối CSS #prog + progStart/progStep/progDone/progFail
+(khung dính đáy, thanh %, đồng hồ giây, vòng xoay CSS, khoá nút khi BUSY). Một lệnh nặng (add_group/copy, write_image)
+không chia nhỏ được thì ghi rõ trong tên bước "có thể mất vài chục giây".
+
 ## Tool "Mặt bằng xiên" (tools/MatBangXien, module PhucBoTool::MatBangXien)
+v1.5.0: build/export chạy qua run_steps (Dựng: 5 bước; Xuất: 1 bước mỗi cao độ + trả cao độ + kiểm tra), khung tiến độ.
 v1.4.0 (2026-11-26): NGƯỜI DÙNG ĐÃ CHẠY ĐƯỢC trên SketchUp thật (ảnh nền đen nét trắng ra đúng), phàn nàn nét dày, muốn
 nét tinh gọn + xuất rõ (PDF). write_png: write_image thêm scale_factor (ô "Nét khi xuất", mặc định 1; SketchUp 2019.2+
 mặc định nhân nét 2× khi xuất ảnh lớn; khoá CHƯA kiểm chứng, lỗi thì xuất lại không có khoá). write_pdf: model.export PDF
