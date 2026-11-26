@@ -69,6 +69,10 @@ mỗi bước trong UI.start_timer(0.05) riêng, trước bước gọi js progS
 không chia nhỏ được thì ghi rõ trong tên bước "có thể mất vài chục giây".
 
 ## Tool "Mặt bằng xiên" (tools/MatBangXien, module PhucBoTool::MatBangXien)
+v1.6.0: NGƯỜI DÙNG BỊ SKETCHUP SẬP (BugSplat) lúc chuẩn bị Xuất PDF với mô hình cả khu trường (nặng); nguyên nhân CHƯA rõ
+(có thể hết bộ nhớ khi export vector, hoặc khoá option PDF). Thêm: autosave(p) (model.save nếu modified, file chưa lưu thì hỏi)
+trước Dựng và Xuất; hide_others/show_others ẩn tạm mọi entity cấp ngoài trừ bản xiên khi xuất (luôn hiện lại trong finish của
+run_steps); tắt bóng đổ; PDF hỏi lại kèm face_count (đếm mặt, dừng ở 300.000) và khuyên PNG nét 1×. Đã hỏi cấu hình máy.
 v1.5.0: build/export chạy qua run_steps (Dựng: 5 bước; Xuất: 1 bước mỗi cao độ + trả cao độ + kiểm tra), khung tiến độ.
 v1.4.0 (2026-11-26): NGƯỜI DÙNG ĐÃ CHẠY ĐƯỢC trên SketchUp thật (ảnh nền đen nét trắng ra đúng), phàn nàn nét dày, muốn
 nét tinh gọn + xuất rõ (PDF). write_png: write_image thêm scale_factor (ô "Nét khi xuất", mặc định 1; SketchUp 2019.2+

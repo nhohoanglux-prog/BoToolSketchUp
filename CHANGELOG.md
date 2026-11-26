@@ -3,6 +3,7 @@
 Dòng dạng `- Bộ Tool SketchUp v<phiên bản>: ...` (bảng) hoặc `- <TênThưMụcTool> v<phiên bản>: ...` (tool); bảng hiện dòng này trong khung "Có bản mới".
 
 ## 2026-11-26
+- MatBangXien v1.6.0: bớt nguy cơ SketchUp treo/sập với mô hình nặng: tự lưu file trước khi Dựng và trước khi Xuất (tắt được bằng ô "Tự lưu file…"); khi xuất thì ẩn tạm phần còn lại của mô hình, tắt bóng đổ, xuất xong hiện lại như cũ; trước khi Xuất PDF báo số mặt phải vẽ và hỏi lại, khuyên dùng PNG nét 1× vì an toàn hơn.
 - MatBangXien v1.5.0: có khung tiến độ dưới đáy hộp thoại khi Dựng / Xuất PNG / Xuất PDF: đang làm bước nào (ví dụ "Bước 2/5: Chép mô hình"), thanh chạy, số giây đã chạy, vòng xoay báo đang bận; xong thì báo "✓ Xong" màu xanh, lỗi thì báo đỏ kèm lý do; thanh trạng thái dưới đáy SketchUp cũng ghi bước đang làm; khi đổi thông số hiện "Đang cập nhật bản xiên…".
 - Bộ Tool SketchUp v1.1.0: lúc cập nhật hiện đang tải bao nhiêu file (cả trên thanh trạng thái SketchUp).
 - MatBangXien v1.4.0: nét tinh hơn khi xuất: PNG có ô "Nét khi xuất" (mặc định Tinh, mảnh 1×, trước đây SketchUp tự nhân đôi độ dày nét khi xuất ảnh lớn); thêm nút "Xuất PDF vector" (phóng to bao nhiêu nét vẫn mảnh, độ dày nét thường và nét cắt chỉnh bằng mm); kiểu "Như ref" mặc định nét mảnh hơn.

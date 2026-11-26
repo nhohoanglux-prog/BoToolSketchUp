@@ -117,11 +117,12 @@
     <select id="width"><option>3000</option><option>4000</option><option selected>6000</option><option>8000</option></select> px
     <button onclick="call('export')" style="margin-left:auto">Xuất PNG…</button></div>
   <div class="row"><label class="l">Nét khi xuất PNG</label>
-    <select id="lineScale"><option value="1" selected>Tinh, mảnh (1×)</option><option value="1.5">Vừa (1,5×)</option><option value="2">Dày như mặc định SketchUp (2×)</option></select></div>
+    <select id="lineScale"><option value="1" selected>Tinh, mảnh (1×)</option><option value="1.5">Vừa (1,5×)</option><option value="2">Dày như mặc định SketchUp (2×)</option></select>
+    <span class="hint">Khuyên dùng: PNG nét 1× (an toàn hơn PDF). Máy yếu chọn 4000–6000 px.</span></div>
   <div class="row"><label class="l">PDF: nét thường</label><input type="number" id="pdfLine" value="0.05" min="0.01" max="1" step="0.01"> mm
     <label style="margin-left:6px">nét cắt</label><input type="number" id="pdfCut" value="0.25" min="0.01" max="2" step="0.05"> mm</div>
-  <div class="row"><button onclick="call('exportpdf')">Xuất PDF vector…</button>
-    <span class="hint">Phóng to bao nhiêu nét vẫn mảnh, in rõ (cần SketchUp Pro).</span></div>
+  <div class="row"><button onclick="call('exportpdf')">Xuất PDF vector (nặng)…</button>
+    <span class="hint">Nét vector, cần SketchUp Pro. Mô hình lớn dễ làm máy treo/sập: nên dùng PNG nét 1×.</span></div>
   <div class="row"><span class="hint">Mẹo nét tinh: kéo "Nét mạnh" về 1, "Nét theo độ sâu" về 0, xuất PNG 8000 px với nét 1×. Chất ảnh có hạt: mở PNG trong Photoshop, chạy tool "Hạt ảnh" trong Tool Launcher.</span></div>
 </fieldset>
 
@@ -131,6 +132,7 @@
   <button onclick="if (confirm('Xoá bản xiên và trả kiểu hiển thị, góc nhìn như cũ?')) call('restore')">Trả lại như cũ</button>
 </div>
 <div class="row"><label><input type="checkbox" id="live" checked> Tự cập nhật bản xiên khi đổi thông số</label></div>
+<div class="row"><label><input type="checkbox" id="autosave" checked> Tự lưu file trước khi dựng / xuất (phòng SketchUp bị sập)</label></div>
 <div id="msg"></div>
 
 <script>
@@ -159,7 +161,7 @@ function params() {
     fill: $('fill').value, cut: $('cut').value, mode: parseInt($('mode').value, 10),
     profile: parseInt($('profile').value, 10), cutw: parseInt($('cutw').value, 10),
     depth: parseInt($('depth').value, 10), fog: $('fog').checked,
-    width: parseInt($('width').value, 10), lineScale: $('lineScale').value, pdfLine: $('pdfLine').value, pdfCut: $('pdfCut').value, live: $('live').checked
+    width: parseInt($('width').value, 10), lineScale: $('lineScale').value, autosave: $('autosave').checked, pdfLine: $('pdfLine').value, pdfCut: $('pdfCut').value, live: $('live').checked
   };
 }
 
@@ -281,7 +283,7 @@ function init(saved) {
       if (saved[k] !== undefined && saved[k] !== null) $(k).value = saved[k];
     });
     if (saved.mode) $('mode').value = String(saved.mode);
-    ['cutOn', 'flip', 'fillOn', 'fog', 'live'].forEach(function (k) { if (typeof saved[k] == 'boolean') $(k).checked = saved[k]; });
+    ['cutOn', 'flip', 'fillOn', 'fog', 'live', 'autosave'].forEach(function (k) { if (typeof saved[k] == 'boolean') $(k).checked = saved[k]; });
     if (saved.dir) dir = saved.dir;
   }
   refreshMarks();

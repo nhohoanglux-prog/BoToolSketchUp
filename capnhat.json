@@ -6,9 +6,9 @@
     {
       "id": "MatBangXien",
       "name": "Mặt bằng xiên",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "date": "2026-11-26",
-      "notes": "Có khung tiến độ dưới đáy hộp thoại khi Dựng / Xuất PNG / Xuất PDF: đang làm bước nào (ví dụ \"Bước 2/5: Chép mô hình\"), thanh chạy, số giây đã chạy, vòng xoay báo đang bận; xong thì báo \"✓ Xong\" màu xanh, lỗi thì báo đỏ kèm lý do; thanh trạng thái dưới đáy SketchUp cũng ghi bước đang làm; khi đổi thông số hiện \"Đang cập nhật bản xiên…\"."
+      "notes": "Bớt nguy cơ SketchUp treo/sập với mô hình nặng: tự lưu file trước khi Dựng và trước khi Xuất (tắt được bằng ô \"Tự lưu file…\"); khi xuất thì ẩn tạm phần còn lại của mô hình, tắt bóng đổ, xuất xong hiện lại như cũ; trước khi Xuất PDF báo số mặt phải vẽ và hỏi lại, khuyên dùng PNG nét 1× vì an toàn hơn."
     }
   ],
   "files": [
@@ -22,6 +22,10 @@
     "phuc_botool/tools/MatBangXien/main.rb"
   ],
   "news": [
+    {
+      "date": "2026-11-26",
+      "text": "MatBangXien v1.6.0: bớt nguy cơ SketchUp treo/sập với mô hình nặng: tự lưu file trước khi Dựng và trước khi Xuất (tắt được bằng ô \"Tự lưu file…\"); khi xuất thì ẩn tạm phần còn lại của mô hình, tắt bóng đổ, xuất xong hiện lại như cũ; trước khi Xuất PDF báo số mặt phải vẽ và hỏi lại, khuyên dùng PNG nét 1× vì an toàn hơn."
+    },
     {
       "date": "2026-11-26",
       "text": "MatBangXien v1.5.0: có khung tiến độ dưới đáy hộp thoại khi Dựng / Xuất PNG / Xuất PDF: đang làm bước nào (ví dụ \"Bước 2/5: Chép mô hình\"), thanh chạy, số giây đã chạy, vòng xoay báo đang bận; xong thì báo \"✓ Xong\" màu xanh, lỗi thì báo đỏ kèm lý do; thanh trạng thái dưới đáy SketchUp cũng ghi bước đang làm; khi đổi thông số hiện \"Đang cập nhật bản xiên…\"."

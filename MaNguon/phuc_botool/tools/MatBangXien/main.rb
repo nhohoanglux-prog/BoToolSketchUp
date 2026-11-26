@@ -2,7 +2,7 @@
 # @name: Mặt bằng xiên
 # @group: Diễn họa
 # @desc: Biến mô hình thành ảnh mặt bằng xiên kiểu axonometric: cắt ngang, phần cắt tô màu, nền đen hoặc vẽ tay, xuất PNG.
-# @version: 1.5.0
+# @version: 1.6.0
 # @date: 2026-11-26
 # @icon: layers
 # @module: PhucBoTool::MatBangXien
@@ -183,6 +183,7 @@ module PhucBoTool
       runner = nil
       finish = lambda do |ok, text|
         @busy = false
+        show_others
         Sketchup.status_text = ''
         if ok
           js("progDone(#{text.to_json})")
@@ -227,6 +228,61 @@ module PhucBoTool
       false
     end
 
+    # ---------- giảm nguy cơ treo/sập với mô hình nặng ----------
+    # Lưu file trước bước nặng (người dùng bị SketchUp sập khi xuất PDF mô hình lớn, 2026-11-26).
+    def self.autosave(p)
+      return true unless p['autosave'] != false
+      return true unless model.modified?
+      if model.path.to_s.empty?
+        r = UI.messagebox("File chưa được lưu lần nào. Nên lưu trước (File > Save) phòng SketchUp bị sập.\n\nVẫn chạy tiếp?", MB_YESNO)
+        return r == IDYES ? true : stop_with('Đã dừng để bạn lưu file trước.')
+      end
+      model.save
+      true
+    rescue StandardError => e
+      puts "autosave: #{e.message}"
+      true
+    end
+
+    # Ẩn tạm mọi thứ ngoài bản xiên khi xuất (bớt việc cho SketchUp), xuất xong hiện lại đúng như cũ.
+    def self.hide_others(copy)
+      return if @hidden
+      @hidden = []
+      model.start_operation('Ẩn tạm khi xuất', true, false, true)
+      model.entities.each do |e|
+        next if e == copy || !e.respond_to?(:hidden?) || e.hidden?
+        e.hidden = true
+        @hidden << e
+      end
+      model.commit_operation
+    end
+
+    def self.show_others
+      return unless @hidden
+      list = @hidden
+      @hidden = nil
+      model.start_operation('Hiện lại sau khi xuất', true, false, true)
+      list.each { |e| e.hidden = false if e.valid? }
+      model.commit_operation
+    rescue StandardError => e
+      puts "show_others: #{e.message}"
+    end
+
+    # đếm sơ số mặt trong bản xiên (dừng đếm khi quá 'cap') để cảnh báo trước khi xuất PDF
+    def self.face_count(ents, cap = 300_000, seen = {})
+      n = 0
+      ents.each do |e|
+        if e.is_a?(Sketchup::Face)
+          n += 1
+        elsif e.is_a?(Sketchup::Group) || e.is_a?(Sketchup::ComponentInstance)
+          d = e.definition
+          n += (seen[d] ||= face_count(d.entities, cap, seen))
+        end
+        return n if n > cap
+      end
+      n
+    end
+
     # ---------- dựng / cập nhật ----------
     def self.build(p)
       st = {}
@@ -241,6 +297,7 @@ module PhucBoTool
           save_state
           true
         }],
+        ['Lưu file trước khi dựng (phòng SketchUp bị sập)', lambda { autosave(p) }],
         ['Chép mô hình (mô hình lớn có thể mất vài chục giây)', lambda {
           model.start_operation('Dựng mặt bằng xiên', true)
           @op_open = true
@@ -330,13 +387,29 @@ module PhucBoTool
       path = UI.savepanel(fmt == 'pdf' ? 'Lưu file PDF' : 'Lưu ảnh PNG', dir, "#{base}.#{ext}")
       return unless path
       path += ".#{ext}" unless path =~ /\.#{ext}\z/i
+      if fmt == 'pdf'
+        nf = face_count(copy.definition.entities)
+        many = nf > 300_000 ? 'hơn 300.000' : nf.to_s.reverse.scan(/\d{1,3}/).join('.').reverse
+        warn = "Xuất PDF vector phải vẽ lại từng nét của #{many} mặt. Mô hình lớn có thể làm SketchUp treo hoặc sập " \
+               "(đã gặp với file của bạn).\n\nCách an toàn hơn: Xuất PNG nét 1× (6000–8000 px vẫn rất nét khi in; máy yếu chọn 4000).\n\n" \
+               "Tool sẽ lưu file trước và ẩn tạm phần còn lại của mô hình. Vẫn xuất PDF?"
+        return msg('Đã thôi xuất PDF.') if UI.messagebox(warn, MB_YESNO) != IDYES
+      end
       view = model.active_view
       w = [p['width'].to_i, 500].max
       h = (w * view.vpheight.to_f / view.vpwidth.to_f).round
       hs = p['cutOn'] == false ? [heights(p)[0]] : heights(p)
       files = []
       what = fmt == 'pdf' ? 'PDF' : 'ảnh'
-      steps = hs.each_with_index.map do |hm, k|
+      steps = [
+        ['Lưu file trước khi xuất', lambda { autosave(p) }],
+        ['Ẩn tạm phần còn lại, tắt bóng đổ', lambda {
+          hide_others(copy)
+          begin; model.shadow_info['DisplayShadows'] = false; rescue StandardError; end
+          true
+        }]
+      ]
+      steps += hs.each_with_index.map do |hm, k|
         label = "Xuất #{what} #{k + 1}/#{hs.size}" + (p['cutOn'] == false ? '' : " (cắt ở #{format('%.2f', hm).sub('.', ',')} m)") +
                 (fmt == 'pdf' ? '' : ", #{w} px")
         [label, lambda {
@@ -358,6 +431,7 @@ module PhucBoTool
           true
         }]
       end
+      steps << ['Hiện lại phần đã ẩn', lambda { show_others; true }]
       steps << ['Kiểm tra file đã xuất', lambda {
         next true unless files.empty?
         next stop_with('Không xuất được PDF. Bản SketchUp Make (miễn phí) không có xuất PDF; thử xuất PNG.') if fmt == 'pdf'
