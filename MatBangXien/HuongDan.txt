@@ -1,0 +1,28 @@
+﻿MẶT BẰNG XIÊN CHO SKETCHUP – HƯỚNG DẪN (v1.2.0, 2026-11-26)
+
+CÀI (làm một lần, SketchUp 2021 trở lên)
+0. Đã cài bản cũ (v1.0/v1.1)? Vào Extension Manager, tìm "Mặt bằng xiên (Phúc)", bấm Uninstall, tắt mở lại SketchUp.
+1. Giải nén file zip này ra (chuột phải > Extract All).
+2. Mở SketchUp > Extensions > Extension Manager.
+3. Bấm "Install Extension", chọn file "MatBangXien.rbz", bấm Yes.
+4. Xong. Mở công cụ: Extensions > Mặt bằng xiên (Phúc).
+   Từ nay có bản mới thì hộp thoại tự hiện "Có bản mới", bấm "Cập nhật ngay" rồi tắt mở lại SketchUp, không cần cài lại.
+
+DÙNG
+1. Chọn các khối muốn dựng (không chọn gì = cả mô hình). Đứng ngoài group (không mở group).
+2. Mục 2: gõ cao độ cắt (mét), hoặc bấm "Bấm chọn điểm trên mô hình" rồi bấm vào
+   một điểm trên tường. Gõ nhiều cao độ cách nhau dấu ; (ví dụ 1,2; 4,8) để xuất mỗi tầng 1 ảnh.
+3. Mục 3: chọn góc (15°…75° hoặc tự gõ), hướng đổ, độ dài đổ, xoay mặt bằng.
+   Như ảnh ref nền đen: xoay 0°, 45°, xuống phải, 100%.
+   Như bản vẽ tay: xoay 45°, hướng "thẳng xuống".
+4. Bấm "Dựng mặt bằng xiên". Bản gốc giữ nguyên, bản xiên nằm bên phải, camera tự nhìn từ trên.
+5. Mục 4: chọn kiểu hiển thị (nền đen cắt trắng, vẽ tay chì, bút bi xanh, giấy trắng...).
+   Đổi thông số là bản xiên tự cập nhật.
+6. Mục 5: chọn chiều ngang ảnh, bấm "Xuất PNG...".
+7. Muốn ảnh có hạt: mở PNG trong Photoshop, chạy tool "Hạt ảnh" trong Tool Launcher.
+8. Xong việc: bấm "Trả lại như cũ" (xoá bản xiên, trả kiểu hiển thị và góc nhìn cũ).
+
+LƯU Ý
+- Phần cắt chỉ tô màu được ở khối kín (tường, sàn là khối đặc). Khối hở thì chỉ có nét viền cắt.
+- Thấy phần trên thay vì phần dưới: tick "Lật phía giữ lại".
+- Ảnh quá lớn không xuất được: chọn chiều ngang nhỏ hơn (4000).

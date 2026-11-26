@@ -1,0 +1,10 @@
+{
+  "version": "1.2.0",
+  "date": "2026-11-26",
+  "notes": "Chuyển sang kho riêng BoToolSketchUp (chỉ chứa tool SketchUp, chia sẻ cho người khác không kèm tool Photoshop). Cài lại file .rbz một lần, từ nay cập nhật bằng nút trong hộp thoại như cũ.",
+  "files": [
+    "phuc_mat_bang_xien.rb",
+    "phuc_mat_bang_xien/dialog.html",
+    "phuc_mat_bang_xien/main.rb"
+  ]
+}

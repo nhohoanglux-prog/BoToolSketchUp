@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Mặt bằng xiên</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 10px 12px 14px; font: 12px "Segoe UI", Arial, sans-serif; background: #f3f3f3; color: #222; }
+  h1 { font-size: 14px; margin: 0 0 2px; }
+  .ver { color: #777; font-size: 11px; margin-bottom: 8px; }
+  fieldset { border: 1px solid #d0d0d0; border-radius: 6px; margin: 0 0 8px; padding: 6px 8px 8px; background: #fff; }
+  legend { font-weight: 600; padding: 0 4px; }
+  .row { display: flex; align-items: center; gap: 6px; margin: 4px 0; flex-wrap: wrap; }
+  .row label.l { width: 92px; flex: none; color: #444; }
+  input[type=text], input[type=number], select { font: inherit; padding: 2px 4px; border: 1px solid #bbb; border-radius: 3px; }
+  input[type=number] { width: 58px; }
+  input[type=color] { width: 34px; height: 22px; padding: 0; border: 1px solid #bbb; }
+  input[type=range] { flex: 1; min-width: 90px; }
+  button { font: inherit; padding: 3px 8px; border: 1px solid #aaa; border-radius: 4px; background: #fafafa; cursor: pointer; }
+  button:hover { background: #e9f1ff; border-color: #6b9be0; }
+  button.chip { padding: 1px 6px; }
+  button.on { background: #2b6cd4; color: #fff; border-color: #2b6cd4; }
+  button.main { background: #2b6cd4; color: #fff; border-color: #2b6cd4; font-weight: 600; padding: 6px 10px; }
+  button.main:hover { background: #1f58b3; }
+  .hint { color: #777; font-size: 11px; }
+  .info { background: #eef4ff; border-radius: 4px; padding: 4px 6px; }
+  #msg { min-height: 18px; margin: 6px 0 0; font-size: 12px; }
+  #msg.err { color: #c0392b; }
+  #msg.ok { color: #1e7d32; }
+  .val { width: 22px; text-align: right; color: #444; }
+  .bottom { display: flex; gap: 6px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<h1>Mặt bằng xiên (plan oblique)</h1>
+<div class="ver"><span id="ver">v…</span> · <a href="#" onclick="sketchup.checkupdate('');return false">Kiểm tra cập nhật</a></div>
+<div id="upd" style="display:none;background:#fff4d6;border:1px solid #e3b341;border-radius:6px;padding:6px 8px;margin-bottom:8px">
+  <b>🔔 Có bản mới <span id="updVer"></span></b><div id="updNote" class="hint" style="margin:3px 0 5px"></div>
+  <button class="main" onclick="sketchup.doupdate('')">⬇ Cập nhật ngay</button>
+</div>
+
+<fieldset>
+  <legend>1. Vùng dựng</legend>
+  <div class="info" id="info">Đang đọc mô hình…</div>
+  <div class="row"><button onclick="call('info')">Làm mới</button>
+    <span class="hint">Chọn khối muốn dựng; không chọn gì = cả mô hình.</span></div>
+</fieldset>
+
+<fieldset>
+  <legend>2. Mặt cắt ngang</legend>
+  <div class="row"><label><input type="checkbox" id="cutOn" checked> Cắt ngang (phần bị cắt tô màu)</label></div>
+  <div class="row"><label class="l">Cao độ cắt (m)</label>
+    <input type="text" id="height" value="1,2" style="width:110px">
+    <select id="ref"><option value="base">tính từ đáy vùng chọn</option><option value="zero">tính từ Z = 0</option></select></div>
+  <div class="row"><span class="hint">Nhiều cao độ cách nhau bằng dấu ; (ví dụ 1,2; 4,8; 8,4): xem trước cao độ đầu, Xuất PNG ra mỗi cao độ 1 ảnh.</span></div>
+  <div class="row">
+    <button onclick="call('pick')" title="Bấm vào một điểm trên mô hình (nên xoay để thấy cạnh tường) để lấy cao độ">Bấm chọn điểm trên mô hình</button>
+    <button onclick="call('fromsp')" title="Lấy cao độ từ mặt cắt ngang bạn đã đặt sẵn trong mô hình">Lấy từ mặt cắt có sẵn</button>
+  </div>
+  <div class="row"><label><input type="checkbox" id="flip"> Lật phía giữ lại (nếu thấy phần trên thay vì phần dưới)</label></div>
+</fieldset>
+
+<fieldset>
+  <legend>3. Góc xiên</legend>
+  <div class="row"><label class="l">Góc (độ)</label>
+    <input type="number" id="angle" value="45" min="1" max="89" step="1">
+    <span id="angleChips"></span></div>
+  <div class="row"><label class="l">Hướng đổ</label>
+    <span id="dirChips"></span></div>
+  <div class="row"><label class="l">Độ dài đổ (%)</label>
+    <input type="number" id="length" value="100" min="5" max="300" step="5">
+    <span id="lenChips"></span></div>
+  <div class="row"><label class="l">Xoay mặt bằng (°)</label>
+    <input type="number" id="rot" value="0" min="-180" max="180" step="5">
+    <span id="rotChips"></span></div>
+  <div class="row"><span class="hint">Như ref nền đen: xoay 0°, 45°, đổ xuống phải, 100%. Như các bản vẽ tay: xoay 45°, đổ ↓ thẳng xuống. 50% = kiểu cabinet (tường ngắn lại, đỡ rối).</span></div>
+</fieldset>
+
+<fieldset>
+  <legend>4. Kiểu hiển thị</legend>
+  <div class="row"><label class="l">Kiểu có sẵn</label><select id="preset" style="flex:1"></select></div>
+  <div class="row"><label class="l">Màu nền</label><input type="color" id="bg">
+    <label style="margin-left:8px">Nét</label><input type="color" id="line"></div>
+  <div class="row"><label class="l"><input type="checkbox" id="fillOn"> Tô phần cắt</label><input type="color" id="fill">
+    <label style="margin-left:8px">Viền cắt</label><input type="color" id="cut"></div>
+  <div class="row"><label class="l">Kiểu mặt</label>
+    <select id="mode"><option value="1">Phẳng một màu (như ref)</option><option value="2">Có màu vật liệu</option></select></div>
+  <div class="row"><label class="l" title="Viền ngoài các khối (Profiles)">Nét mạnh (viền khối)</label>
+    <input type="range" id="profile" min="0" max="8" step="1"><span class="val" id="profileV"></span></div>
+  <div class="row"><label class="l" title="Độ dày nét viền phần bị cắt">Nét cắt</label>
+    <input type="range" id="cutw" min="1" max="12" step="1"><span class="val" id="cutwV"></span></div>
+  <div class="row"><label class="l" title="Nét càng gần mặt cắt càng đậm, càng xuống thấp càng mảnh (Depth cue)">Nét theo độ sâu</label>
+    <input type="range" id="depth" min="0" max="8" step="1"><span class="val" id="depthV"></span></div>
+  <div class="row"><label><input type="checkbox" id="fog"> Nét càng thấp càng mờ (sương mù theo độ sâu)</label></div>
+  <div class="row"><button onclick="call('style')">Chỉ đổi kiểu hiển thị (không dựng)</button></div>
+</fieldset>
+
+<fieldset>
+  <legend>5. Xuất ảnh</legend>
+  <div class="row"><label class="l">Chiều ngang</label>
+    <select id="width"><option>3000</option><option>4000</option><option selected>6000</option><option>8000</option></select> px
+    <button onclick="call('export')" style="margin-left:auto">Xuất PNG…</button></div>
+  <div class="row"><span class="hint">Chất ảnh có hạt: mở PNG trong Photoshop, chạy tool "Hạt ảnh" trong Tool Launcher.</span></div>
+</fieldset>
+
+<div class="bottom">
+  <button class="main" onclick="call('build')">Dựng mặt bằng xiên</button>
+  <button onclick="call('frame')">Canh lại khung</button>
+  <button onclick="if (confirm('Xoá bản xiên và trả kiểu hiển thị, góc nhìn như cũ?')) call('restore')">Trả lại như cũ</button>
+</div>
+<div class="row"><label><input type="checkbox" id="live" checked> Tự cập nhật bản xiên khi đổi thông số</label></div>
+<div id="msg"></div>
+
+<script>
+var PRESETS = [
+  { id: 'ref',  name: 'Như ref: nền đen, phần cắt trắng', bg: '#111111', line: '#bdbdbd', fillOn: true, fill: '#ffffff', cut: '#ffffff', mode: 1, profile: 2, cutw: 3, depth: 2, fog: false },
+  { id: 'den2', name: 'Nền đen, nét mảnh nhạt hơn',       bg: '#0b0b0b', line: '#8a8a8a', fillOn: true, fill: '#ffffff', cut: '#ffffff', mode: 1, profile: 1, cutw: 2, depth: 0, fog: true },
+  { id: 'chi',  name: 'Vẽ tay chì: nền giấy, nét đen mảnh, cắt đậm', bg: '#f7f6f2', line: '#3a3a3a', fillOn: true, fill: '#ffffff', cut: '#111111', mode: 1, profile: 2, cutw: 4, depth: 3, fog: true },
+  { id: 'butbi', name: 'Bút bi xanh: nền giấy, nét xanh, cắt đậm', bg: '#f7f6f2', line: '#34479a', fillOn: true, fill: '#ffffff', cut: '#1b2a6b', mode: 1, profile: 2, cutw: 5, depth: 2, fog: false },
+  { id: 'giay', name: 'Mặt bằng giấy: nền trắng, cắt đen', bg: '#ffffff', line: '#555555', fillOn: true, fill: '#111111', cut: '#000000', mode: 1, profile: 2, cutw: 3, depth: 2, fog: false },
+  { id: 'xanh', name: 'Nền xanh đêm, cắt trắng',          bg: '#0e1a2b', line: '#8fa8c4', fillOn: true, fill: '#ffffff', cut: '#ffffff', mode: 1, profile: 2, cutw: 3, depth: 2, fog: false },
+  { id: 'net',  name: 'Chỉ nét trắng, không tô phần cắt', bg: '#111111', line: '#e0e0e0', fillOn: false, fill: '#ffffff', cut: '#ffffff', mode: 1, profile: 2, cutw: 4, depth: 2, fog: false },
+  { id: 'mau',  name: 'Có màu vật liệu, cắt đen',         bg: '#f4f1ea', line: '#2b2b2b', fillOn: true, fill: '#1a1a1a', cut: '#000000', mode: 2, profile: 2, cutw: 3, depth: 0, fog: false },
+  { id: 'tuy',  name: 'Tùy chỉnh (giữ màu đang chọn)' }
+];
+var DIRS = [['xp', '↘ xuống phải'], ['xt', '↙ xuống trái'], ['xd', '↓ thẳng xuống'], ['lp', '↗ lên phải'], ['lt', '↖ lên trái']];
+var dir = 'xp';
+var timer = null;
+
+function $(id) { return document.getElementById(id); }
+
+function params() {
+  return {
+    cutOn: $('cutOn').checked, height: $('height').value, ref: $('ref').value, flip: $('flip').checked,
+    angle: $('angle').value, dir: dir, length: $('length').value, rot: $('rot').value,
+    preset: $('preset').value, bg: $('bg').value, line: $('line').value, fillOn: $('fillOn').checked,
+    fill: $('fill').value, cut: $('cut').value, mode: parseInt($('mode').value, 10),
+    profile: parseInt($('profile').value, 10), cutw: parseInt($('cutw').value, 10),
+    depth: parseInt($('depth').value, 10), fog: $('fog').checked,
+    width: parseInt($('width').value, 10), live: $('live').checked
+  };
+}
+
+function call(name) {
+  showMsg('', false);
+  sketchup[name](JSON.stringify(params()));
+}
+
+function showMsg(t, isErr) {
+  var m = $('msg');
+  m.textContent = t || '';
+  m.className = isErr ? 'err' : 'ok';
+}
+
+function setInfo(i) {
+  $('ver').textContent = 'v' + i.version + ' · ' + i.date;
+  var what = i.selected ? (i.count + ' đối tượng đang chọn') : ('cả mô hình (' + i.count + ' đối tượng, chưa chọn gì)');
+  $('info').textContent = 'Dựng: ' + what + '. Cao từ ' + fmt(i.zmin) + ' m đến ' + fmt(i.zmax) + ' m.' +
+    (i.built ? ' Đã có bản xiên.' : '');
+}
+
+function fmt(n) { return String(Math.round(n * 100) / 100).replace('.', ','); }
+
+function showUpdate(i) {
+  $('updVer').textContent = 'v' + i.version + (i.date ? ' (' + i.date + ')' : '');
+  $('updNote').textContent = i.notes || '';
+  $('upd').style.display = 'block';
+}
+function hideUpdate() { $('upd').style.display = 'none'; }
+
+function setHeight(h) {
+  $('height').value = fmt(h);
+  changed();
+}
+
+function chips(holder, values, onPick, label) {
+  var el = $(holder);
+  el.innerHTML = '';
+  values.forEach(function (v) {
+    var b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = label ? label(v) : v;
+    b.onclick = function () { onPick(v); };
+    b.setAttribute('data-v', Array.isArray(v) ? v[0] : v);
+    el.appendChild(b);
+  });
+}
+
+function markChips(holder, value) {
+  var bs = $(holder).getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++) bs[i].className = 'chip' + (bs[i].getAttribute('data-v') == String(value) ? ' on' : '');
+}
+
+function refreshMarks() {
+  markChips('angleChips', $('angle').value);
+  markChips('lenChips', $('length').value);
+  markChips('rotChips', $('rot').value);
+  markChips('dirChips', dir);
+  ['profile', 'cutw', 'depth'].forEach(function (k) { $(k + 'V').textContent = $(k).value; });
+}
+
+function applyPreset(id) {
+  var p = null;
+  PRESETS.forEach(function (x) { if (x.id == id) p = x; });
+  if (!p || !p.bg) return;
+  ['bg', 'line', 'fill', 'cut', 'profile', 'cutw', 'depth'].forEach(function (k) { $(k).value = p[k]; });
+  $('mode').value = String(p.mode);
+  $('fillOn').checked = p.fillOn;
+  $('fog').checked = p.fog;
+}
+
+// đổi thông số: cập nhật bản xiên (nếu bật "Tự cập nhật"), chờ 0,4 giây cho đỡ giật
+function changed() {
+  refreshMarks();
+  if (!$('live').checked) return;
+  clearTimeout(timer);
+  timer = setTimeout(function () { sketchup.update(JSON.stringify(params())); }, 400);
+}
+
+function init(saved) {
+  PRESETS.forEach(function (p) {
+    var o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name;
+    $('preset').appendChild(o);
+  });
+  chips('angleChips', [15, 30, 45, 60, 75], function (v) { $('angle').value = v; changed(); }, function (v) { return v + '°'; });
+  chips('rotChips', [0, 30, 45, 60, 90], function (v) { $('rot').value = v; changed(); }, function (v) { return v + '°'; });
+  chips('lenChips', [100, 75, 50], function (v) { $('length').value = v; changed(); }, function (v) { return v + '%'; });
+  chips('dirChips', DIRS, function (v) { dir = v[0]; changed(); }, function (v) { return v[1]; });
+  applyPreset('ref');
+  if (saved) {
+    ['height', 'ref', 'angle', 'length', 'rot', 'preset', 'bg', 'line', 'fill', 'cut', 'profile', 'cutw', 'depth', 'width'].forEach(function (k) {
+      if (saved[k] !== undefined && saved[k] !== null) $(k).value = saved[k];
+    });
+    if (saved.mode) $('mode').value = String(saved.mode);
+    ['cutOn', 'flip', 'fillOn', 'fog', 'live'].forEach(function (k) { if (typeof saved[k] == 'boolean') $(k).checked = saved[k]; });
+    if (saved.dir) dir = saved.dir;
+  }
+  refreshMarks();
+  var ids = ['cutOn', 'height', 'ref', 'flip', 'angle', 'length', 'rot', 'bg', 'line', 'fillOn', 'fill', 'cut', 'mode', 'profile', 'cutw', 'depth', 'fog'];
+  ids.forEach(function (k) {
+    $(k).addEventListener('change', changed);
+    if ($(k).type == 'range' || $(k).type == 'number') $(k).addEventListener('input', refreshMarks);
+  });
+  $('preset').addEventListener('change', function () { applyPreset($('preset').value); changed(); });
+  // chỉnh màu/nét bằng tay thì chuyển sang "Tùy chỉnh"
+  ['bg', 'line', 'fill', 'cut', 'fillOn', 'mode', 'profile', 'cutw', 'depth', 'fog'].forEach(function (k) {
+    $(k).addEventListener('change', function () { $('preset').value = 'tuy'; });
+  });
+}
+
+window.onload = function () { sketchup.ready(''); };
+</script>
+</body>
+</html>
