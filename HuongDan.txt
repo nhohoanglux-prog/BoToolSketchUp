@@ -1,0 +1,23 @@
+﻿BỘ TOOL SKETCHUP – HƯỚNG DẪN CÀI (làm một lần, SketchUp 2021 trở lên)
+
+1. Giải nén file zip này ra (chuột phải > Extract All).
+2. Mở SketchUp > Extensions > Extension Manager.
+   Đã cài "Mặt bằng xiên (Phúc)" riêng trước đây thì bấm Uninstall nó trước (không gỡ cũng được, bộ mới tự tắt nó).
+3. Bấm "Install Extension", chọn file "BoToolSketchUp.rbz", bấm Yes.
+4. Mở bảng tool: Extensions > Bộ Tool SketchUp (Phúc) > Mở bảng tool,
+   hoặc bấm nút cờ lê xanh trên thanh công cụ "Bộ Tool SketchUp" (View > Toolbars nếu chưa thấy).
+   Kéo bảng sang cạnh màn hình cho tiện.
+
+DÙNG
+- Gõ tìm tool (không dấu cũng được), bấm vào tool là chạy. Enter = chạy tool đầu tiên.
+- Bấm tên nhóm để thu gọn / mở nhóm.
+- Mỗi tool ghi phiên bản và ngày. Cuối bảng ghi phiên bản của bộ.
+- Có bản mới: bảng tự hiện khung "Có bản mới" kèm ghi chú, bấm "Cập nhật ngay". Không cần cài lại,
+  không cần tắt SketchUp. Tool vừa cập nhật có nhãn MỚI.
+
+TOOL HIỆN CÓ
+- Mặt bằng xiên: biến mô hình thành ảnh mặt bằng xiên (axonometric), cắt ngang, phần cắt tô màu,
+  nền đen hoặc kiểu vẽ tay, xuất PNG. Muốn ảnh có hạt: mở PNG trong Photoshop, chạy tool "Hạt ảnh".
+  Lưu ý: phần cắt chỉ tô màu được ở khối kín; thấy phần trên thay vì phần dưới thì tick "Lật phía giữ lại".
+
+GỠ: Extension Manager > Bộ Tool SketchUp (Phúc) > Uninstall.

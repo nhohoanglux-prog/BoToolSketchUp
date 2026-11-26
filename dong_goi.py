@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Đóng gói mọi plugin SketchUp trong kho BoToolSketchUp.
+"""Đóng gói Bộ Tool SketchUp.
 Chạy ở thư mục gốc kho:  python3 dong_goi.py [thư_mục_ra]   (mặc định /mnt/project-files)
-Mỗi plugin là 1 thư mục cấp 1 có MaNguon/ (file .rb nạp + thư mục code), HuongDan.txt.
-Với mỗi plugin <Ten>: tạo <Ten>/capnhat.json (plugin đọc để tự cập nhật), <Ten>/<Ten>.rbz,
-và <thư_mục_ra>/<Ten>_SketchUp.zip (rbz + HuongDan.txt).
-Ghi chú cập nhật lấy từ CHANGELOG.md, dòng dạng:  - <Ten> v<phiên bản>: <thay đổi>"""
+- Đọc @version/@date của bảng (MaNguon/phuc_botool/launcher.rb) và của từng tool (MaNguon/phuc_botool/tools/<Id>/main.rb).
+- Ghi chú lấy từ CHANGELOG.md, dòng dạng:  - Bộ Tool SketchUp v1.0.0: ...   hoặc   - <Id> v1.3.0: ...
+- Tạo capnhat.json (nút Cập nhật trong bảng đọc file này), BoToolSketchUp.rbz và <thư_mục_ra>/BoToolSketchUp.zip."""
 import json, os, re, sys, zipfile
 ROOT = os.path.dirname(os.path.abspath(__file__))
+SRC = os.path.join(ROOT, 'MaNguon')
 OUT = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files'
 
 news, date = [], ''
@@ -19,27 +19,34 @@ def note_for(prefix, version):
     for d, txt in news:
         m = re.match(re.escape(prefix) + r'\s+v' + re.escape(version) + r'\s*:\s*(.+)', txt)
         if m: n = m.group(1); return n[:1].upper() + n[1:]
-    return ''
+    raise SystemExit('CHANGELOG.md thiếu dòng "- %s v%s: ..."' % (prefix, version))
 
-for name in sorted(os.listdir(ROOT)):
-    base = os.path.join(ROOT, name)
-    src = os.path.join(base, 'MaNguon')
-    if not os.path.isdir(src): continue
-    files = sorted(os.path.relpath(os.path.join(dp, f), src).replace(os.sep, '/') for dp, _, fs in os.walk(src) for f in fs)
-    loader = [f for f in files if '/' not in f and f.endswith('.rb')]
-    assert len(loader) == 1, 'Cần đúng 1 file .rb nạp trong ' + src
-    t = open(os.path.join(src, loader[0]), encoding='utf-8').read()
-    v = re.search(r"VERSION = '([^']+)'", t).group(1)
-    d = re.search(r"DATE = '([^']+)'", t).group(1)
-    note = note_for(name, v)
-    assert note, 'CHANGELOG.md thiếu dòng "- %s v%s: ..."' % (name, v)
-    json.dump({'version': v, 'date': d, 'notes': note, 'files': files},
-              open(os.path.join(base, 'capnhat.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
-    rbz = os.path.join(base, name + '.rbz')
-    with zipfile.ZipFile(rbz, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for f in files: zf.write(os.path.join(src, f), f)
-    z = os.path.join(OUT, name + '_SketchUp.zip')
-    with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.write(rbz, name + '_SketchUp/' + name + '.rbz')
-        zf.write(os.path.join(base, 'HuongDan.txt'), name + '_SketchUp/HuongDan.txt')
-    print('OK', name, v, z)
+def header(path):
+    t = open(path, encoding='utf-8').read(3000)
+    h = {}
+    for k, v in re.findall(r'@(\w+):[ \t]*([^\r\n]+)', t): h.setdefault(k, v.strip())
+    return h
+
+lh = header(os.path.join(SRC, 'phuc_botool', 'launcher.rb'))
+tools = []
+tdir = os.path.join(SRC, 'phuc_botool', 'tools')
+for tid in sorted(os.listdir(tdir)):
+    f = os.path.join(tdir, tid, 'main.rb')
+    if not os.path.isfile(f): continue
+    h = header(f)
+    for k in ('name', 'group', 'desc', 'version', 'date', 'module'):
+        assert h.get(k), 'Thiếu @%s trong %s' % (k, f)
+    tools.append({'id': tid, 'name': h['name'], 'version': h['version'], 'date': h['date'], 'notes': note_for(tid, h['version'])})
+files = sorted(os.path.relpath(os.path.join(dp, f), SRC).replace(os.sep, '/') for dp, _, fs in os.walk(SRC) for f in fs)
+info = {'version': lh['version'], 'date': lh['date'], 'notes': note_for('Bộ Tool SketchUp', lh['version']),
+        'tools': tools, 'files': files, 'news': [{'date': d, 'text': t} for d, t in news[:10]]}
+json.dump(info, open(os.path.join(ROOT, 'capnhat.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+
+rbz = os.path.join(ROOT, 'BoToolSketchUp.rbz')
+with zipfile.ZipFile(rbz, 'w', zipfile.ZIP_DEFLATED) as zf:
+    for f in files: zf.write(os.path.join(SRC, f), f)
+z = os.path.join(OUT, 'BoToolSketchUp.zip')
+with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
+    zf.write(rbz, 'BoToolSketchUp/BoToolSketchUp.rbz')
+    zf.write(os.path.join(ROOT, 'HuongDan.txt'), 'BoToolSketchUp/HuongDan.txt')
+print('OK bảng', lh['version'], [(t['id'], t['version']) for t in tools], z)

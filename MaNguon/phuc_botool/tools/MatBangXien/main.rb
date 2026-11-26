@@ -1,6 +1,13 @@
 # encoding: UTF-8
-# Mặt bằng xiên (plan oblique) – BoToolSketchUp
-# Phiên bản 1.2.0 – 2026-11-26
+# @name: Mặt bằng xiên
+# @group: Diễn họa
+# @desc: Biến mô hình thành ảnh mặt bằng xiên kiểu axonometric: cắt ngang, phần cắt tô màu, nền đen hoặc vẽ tay, xuất PNG.
+# @version: 1.3.0
+# @date: 2026-11-26
+# @icon: layers
+# @module: PhucBoTool::MatBangXien
+#
+# Tool trong Bộ Tool SketchUp (kho nhohoanglux-prog/BoToolSketchUp). Bảng Bộ Tool đọc các dòng @ ở trên.
 #
 # Cách làm: chép vùng chọn thành 1 group riêng (bản gốc giữ nguyên), "xiên" group đó
 # (x' = x + k*cos(g)*(zc - z), y' = y + k*sin(g)*(zc - z)) nên mặt bằng ở cao độ cắt
@@ -8,7 +15,7 @@
 # camera song song nhìn thẳng từ trên, đổi kiểu hiển thị (nền, nét, tô phần cắt), xuất PNG.
 require 'json'
 
-module PhucTools
+module PhucBoTool
   module MatBangXien
     DICT = 'phuc_mbx'.freeze
     PREF = 'PhucMatBangXien'.freeze
@@ -361,92 +368,13 @@ module PhucTools
       msg('Đã xoá bản xiên và trả kiểu hiển thị, góc nhìn như cũ.')
     end
 
-    # ---------- tự cập nhật từ GitHub (kho riêng BoToolSketchUp, mỗi plugin 1 thư mục) ----------
-    REPO = 'nhohoanglux-prog/BoToolSketchUp'.freeze
-    PLUGIN_DIR = 'MatBangXien/'.freeze
-    MANIFEST = (PLUGIN_DIR + 'capnhat.json').freeze
-    @reqs = [] # giữ request khỏi bị dọn rác khi chưa xong
-
-    def self.http_get(url, &blk)
-      req = Sketchup::Http::Request.new(url, Sketchup::Http::GET)
-      begin; req.headers = { 'User-Agent' => 'MatBangXien-SketchUp', 'Cache-Control' => 'no-cache' }; rescue StandardError; end
-      @reqs << req
-      req.start do |r, res|
-        @reqs.delete(r)
-        code = res ? res.status_code.to_i : 0
-        blk.call(code == 200 ? res.body.to_s : nil)
-      end
-    rescue StandardError
-      blk.call(nil)
+    # phiên bản đọc từ dòng @version ở đầu file (cập nhật xong nạp lại là thấy số mới)
+    def self.version
+      File.read(__FILE__, encoding: 'UTF-8')[/@version:\s*(\S+)/, 1].to_s
     end
 
-    # "1.10.0" > "1.9.2"
-    def self.newer?(a, b)
-      x = a.to_s.split('.').map(&:to_i)
-      y = b.to_s.split('.').map(&:to_i)
-      (x <=> y) == 1
-    end
-
-    # Lấy mã commit mới nhất (bản mới hiện ngay); lỗi thì dùng main (có thể trễ ~5 phút)
-    def self.latest_base(&blk)
-      http_get("https://api.github.com/repos/#{REPO}/commits/main") do |body|
-        sha = nil
-        begin; sha = JSON.parse(body)['sha'] if body; rescue StandardError; end
-        blk.call("https://raw.githubusercontent.com/#{REPO}/#{sha || 'main'}/")
-      end
-    end
-
-    # quiet = true: lúc mở hộp thoại, chỉ báo khi có bản mới
-    def self.check_update(quiet)
-      latest_base do |base|
-        http_get(base + MANIFEST) do |body|
-          info = nil
-          begin; info = JSON.parse(body.dup.force_encoding('UTF-8').sub("\uFEFF", '')) if body; rescue StandardError; end
-          if !info
-            err('Không đọc được thông tin cập nhật (mạng lỗi?). Thử lại sau.') unless quiet
-          elsif newer?(info['version'], VERSION)
-            info['base'] = base
-            @pending = info
-            js("showUpdate(#{info.to_json})")
-          elsif !quiet
-            msg("Đang dùng bản mới nhất (v#{VERSION}).")
-          end
-        end
-      end
-    end
-
-    # tải hết rồi mới ghi đè (giống panel), xong báo khởi động lại SketchUp
-    def self.do_update
-      info = @pending
-      return check_update(false) unless info
-      files = info['files'] || []
-      return err('Danh sách file cập nhật trống.') if files.empty?
-      root = File.dirname(__dir__) # thư mục Plugins
-      got = {}
-      msg("Đang tải #{files.size} file…")
-      files.each do |f|
-        http_get(info['base'] + PLUGIN_DIR + 'MaNguon/' + f.split('/').map { |x| x.gsub(' ', '%20') }.join('/')) do |body|
-          got[f] = body
-          next unless got.size == files.size
-          if got.values.any?(&:nil?)
-            err('Tải không đủ file, chưa đổi gì. Thử lại sau.')
-          else
-            begin
-              files.each do |ff|
-                path = File.join(root, ff)
-                Dir.mkdir(File.dirname(path)) unless File.directory?(File.dirname(path))
-                File.open(path, 'wb') { |io| io.write(got[ff]) }
-              end
-              @pending = nil
-              js('hideUpdate()')
-              UI.messagebox("Đã cập nhật Mặt bằng xiên lên v#{info['version']}.\nTắt và mở lại SketchUp để dùng bản mới.")
-              msg("Đã tải v#{info['version']}. Tắt và mở lại SketchUp để dùng bản mới.")
-            rescue StandardError => e
-              err("Không ghi được file vào #{root}: #{e.message}")
-            end
-          end
-        end
-      end
+    def self.date
+      File.read(__FILE__, encoding: 'UTF-8')[/@date:\s*(\S+)/, 1].to_s
     end
 
     # ---------- hộp thoại ----------
@@ -472,7 +400,7 @@ module PhucTools
       bb = bounds_of(src)
       selected = !model.selection.empty?
       info = {
-        version: VERSION, date: DATE,
+        version: version, date: date,
         count: src.size, selected: selected,
         zmin: bb.empty? ? 0 : m(bb.min.z), zmax: bb.empty? ? 0 : m(bb.max.z),
         built: !find_copy.nil?
@@ -498,17 +426,15 @@ module PhucTools
         @dlg.bring_to_front
         return
       end
-      @dlg = UI::HtmlDialog.new(dialog_title: "Mặt bằng xiên v#{VERSION}", preferences_key: 'PhucMatBangXienDlg',
+      @dlg = UI::HtmlDialog.new(dialog_title: "Mặt bằng xiên v#{version}", preferences_key: 'PhucMatBangXienDlg',
                                 scrollable: true, resizable: true, width: 430, height: 820,
                                 style: UI::HtmlDialog::STYLE_DIALOG)
       @dlg.set_file(File.join(__dir__, 'dialog.html'))
       @dlg.add_action_callback('ready') do |_c, _a|
         js("init(#{prefs.to_s.empty? ? 'null' : prefs})")
         send_info
-        check_update(true)
       end
-      @dlg.add_action_callback('checkupdate') { |_c, _a| check_update(false) }
-      @dlg.add_action_callback('doupdate') { |_c, _a| do_update }
+      @dlg.add_action_callback('tools') { |_c, _a| PhucBoTool.show if PhucBoTool.respond_to?(:show) }
       @dlg.add_action_callback('info') { |_c, _a| send_info }
       @dlg.add_action_callback('build') { |_c, a| safe(a) { |p| build(p) } }
       @dlg.add_action_callback('update') { |_c, a| safe(a) { |p| update(p) if find_copy } }
@@ -519,11 +445,6 @@ module PhucTools
       @dlg.add_action_callback('fromsp') { |_c, a| safe(a) { |p| from_section(p) } }
       @dlg.add_action_callback('restore') { |_c, _a| begin; restore; rescue StandardError => e; err("Có lỗi: #{e.message}"); end }
       @dlg.show
-    end
-
-    unless file_loaded?(__FILE__)
-      UI.menu('Extensions').add_item('Mặt bằng xiên (Phúc)') { show }
-      file_loaded(__FILE__)
     end
   end
 end

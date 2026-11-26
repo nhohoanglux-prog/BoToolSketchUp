@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "date": "2026-11-26",
+  "notes": "Bộ tool SketchUp giống bộ Photoshop: cài 1 file BoToolSketchUp.rbz, mở bảng (Extensions > Bộ Tool SketchUp hoặc nút trên thanh công cụ) là thấy mọi tool, có ô tìm kiếm (gõ không dấu được), chia nhóm, mô tả, phiên bản, bấm là chạy; nút \"⬇ Cập nhật\" tải bản mới của bảng và mọi tool về ngay, tool mới thêm sau cũng tự hiện.",
+  "tools": [
+    {
+      "id": "MatBangXien",
+      "name": "Mặt bằng xiên",
+      "version": "1.3.0",
+      "date": "2026-11-26",
+      "notes": "Chuyển vào Bộ Tool SketchUp (mở từ bảng tool, cập nhật chung bằng nút của bảng); bản cài riêng cũ tự được tắt."
+    }
+  ],
+  "files": [
+    "phuc_botool.rb",
+    "phuc_botool/icon.svg",
+    "phuc_botool/icons-LICENSE.txt",
+    "phuc_botool/icons.js",
+    "phuc_botool/launcher.html",
+    "phuc_botool/launcher.rb",
+    "phuc_botool/tools/MatBangXien/dialog.html",
+    "phuc_botool/tools/MatBangXien/main.rb"
+  ],
+  "news": [
+    {
+      "date": "2026-11-26",
+      "text": "Bộ Tool SketchUp v1.0.0: bộ tool SketchUp giống bộ Photoshop: cài 1 file BoToolSketchUp.rbz, mở bảng (Extensions > Bộ Tool SketchUp hoặc nút trên thanh công cụ) là thấy mọi tool, có ô tìm kiếm (gõ không dấu được), chia nhóm, mô tả, phiên bản, bấm là chạy; nút \"⬇ Cập nhật\" tải bản mới của bảng và mọi tool về ngay, tool mới thêm sau cũng tự hiện."
+    },
+    {
+      "date": "2026-11-26",
+      "text": "MatBangXien v1.3.0: chuyển vào Bộ Tool SketchUp (mở từ bảng tool, cập nhật chung bằng nút của bảng); bản cài riêng cũ tự được tắt."
+    },
+    {
+      "date": "2026-11-26",
+      "text": "MatBangXien v1.2.0: chuyển sang kho riêng BoToolSketchUp (chỉ chứa tool SketchUp, chia sẻ cho người khác không kèm tool Photoshop). Cài lại file .rbz một lần, từ nay cập nhật bằng nút trong hộp thoại như cũ."
+    },
+    {
+      "date": "2026-11-26",
+      "text": "MatBangXien v1.1.0: tự cập nhật như panel Photoshop: mở công cụ là tự kiểm tra, có bản mới thì hiện khung \"🔔 Có bản mới\", bấm \"⬇ Cập nhật ngay\" rồi tắt mở lại SketchUp; link \"Kiểm tra cập nhật\" để kiểm tra tay. (khi còn ở kho BoToolPhotoshop)"
+    },
+    {
+      "date": "2026-11-26",
+      "text": "MatBangXien v1.0.0: plugin SketchUp mới (cài bằng file MatBangXien.rbz): biến mô hình thành ảnh mặt bằng xiên kiểu axonometric: chọn cao độ cắt (gõ số, bấm vào mô hình, hoặc nhiều tầng), góc xiên 15–75° hay tự gõ, hướng đổ, xoay mặt bằng; 8 kiểu hiển thị (nền đen cắt trắng như ref, vẽ tay chì, bút bi xanh...), xuất PNG. (khi còn ở kho BoToolPhotoshop)"
+    }
+  ]
+}

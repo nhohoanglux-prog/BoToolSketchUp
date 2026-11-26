@@ -33,11 +33,7 @@
 </head>
 <body>
 <h1>Mặt bằng xiên (plan oblique)</h1>
-<div class="ver"><span id="ver">v…</span> · <a href="#" onclick="sketchup.checkupdate('');return false">Kiểm tra cập nhật</a></div>
-<div id="upd" style="display:none;background:#fff4d6;border:1px solid #e3b341;border-radius:6px;padding:6px 8px;margin-bottom:8px">
-  <b>🔔 Có bản mới <span id="updVer"></span></b><div id="updNote" class="hint" style="margin:3px 0 5px"></div>
-  <button class="main" onclick="sketchup.doupdate('')">⬇ Cập nhật ngay</button>
-</div>
+<div class="ver"><span id="ver">v…</span> · <a href="#" onclick="sketchup.tools('');return false">Mở Bộ Tool SketchUp</a></div>
 
 <fieldset>
   <legend>1. Vùng dựng</legend>
@@ -160,13 +156,6 @@ function setInfo(i) {
 }
 
 function fmt(n) { return String(Math.round(n * 100) / 100).replace('.', ','); }
-
-function showUpdate(i) {
-  $('updVer').textContent = 'v' + i.version + (i.date ? ' (' + i.date + ')' : '');
-  $('updNote').textContent = i.notes || '';
-  $('upd').style.display = 'block';
-}
-function hideUpdate() { $('upd').style.display = 'none'; }
 
 function setHeight(h) {
   $('height').value = fmt(h);

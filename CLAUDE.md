@@ -14,35 +14,59 @@ Người dùng hay chia sẻ bộ tool cho người khác, nên mỗi phần m�
 - Phần mềm mới (InDesign, AutoCAD…) thì tạo kho mới BoTool<TênPhầnMềm>, có CLAUDE.md + CHANGELOG.md riêng.
 Không để code SketchUp vào kho Photoshop và ngược lại.
 
-## Cấu trúc kho (mỗi plugin 1 thư mục cấp 1)
+## Cấu trúc kho: MỘT bộ "Bộ Tool SketchUp" (người dùng yêu cầu 2026-11-26: giống bộ Photoshop, không đặt theo tên 1 tool)
 ```
-dong_goi.py                    đóng gói mọi thư mục có MaNguon/
-CHANGELOG.md                   dòng "- <TênThưMục> v<phiên bản>: ..." = ghi chú "Có bản mới"
-MatBangXien/MaNguon/           phuc_mat_bang_xien.rb (nạp, VERSION/DATE) + phuc_mat_bang_xien/ (main.rb, dialog.html)
-MatBangXien/HuongDan.txt       hướng dẫn cài/dùng (UTF-8 có BOM, CRLF)
-MatBangXien/capnhat.json       do dong_goi.py tạo: version, date, notes, files
-MatBangXien/MatBangXien.rbz    do dong_goi.py tạo
+MaNguon/                         = đúng cấu trúc thư mục Plugins của SketchUp (cũng là nội dung .rbz)
+  phuc_botool.rb                 file nạp (register_extension "Bộ Tool SketchUp (Phúc)", version đọc từ launcher.rb)
+  phuc_botool/launcher.rb        bảng tool + cập nhật; dòng @version/@date đầu file = phiên bản BỘ
+  phuc_botool/launcher.html      giao diện bảng (tìm không dấu, nhóm thu gọn, nhãn MỚI, khung Có bản mới)
+  phuc_botool/icons.js           icon Lucide (chép từ panel Photoshop, ISC, icons-LICENSE.txt), dùng TL_iconSvg
+  phuc_botool/icon.svg           icon nút thanh công cụ
+  phuc_botool/tools/<Id>/main.rb mỗi tool 1 thư mục; đầu file có @name @group @desc @version @date @icon @module
+capnhat.json                     do dong_goi.py tạo: version/date/notes của bộ, tools[{id,name,version,date,notes}], files
+BoToolSketchUp.rbz               do dong_goi.py tạo (cài lần đầu)
+HuongDan.txt                     hướng dẫn cài (UTF-8 BOM, CRLF)
 ```
-Plugin mới: tạo thư mục mới cùng dạng, module Ruby riêng trong PhucTools, chép khối tự cập nhật của main.rb
-(REPO = 'nhohoanglux-prog/BoToolSketchUp', PLUGIN_DIR = '<TênThưMục>/').
+Bảng (module PhucBoTool): quét tools/*/main.rb, đọc header; bấm tool = `load` main.rb (khi mtime đổi) rồi gọi
+`<@module>.show`. Menu Extensions > Bộ Tool SketchUp (Phúc) > Mở bảng tool + từng tool; toolbar "Bộ Tool SketchUp".
+Cập nhật: sha qua api.github.com/repos/nhohoanglux-prog/BoToolSketchUp/commits/main (lỗi thì main/), đọc raw <sha>/capnhat.json,
+so bộ + từng tool (tool mới chưa có cũng tính), tải HẾT file trong "files" từ raw <sha>/MaNguon/<f> rồi mới ghi vào
+thư mục Plugins (File.dirname(ROOT)), lưu id tool vừa cập nhật vào Sketchup default PhucBoTool/new (nhãn MỚI, mất khi bấm chạy),
+nạp lại launcher.rb + tải lại trang, tool nạp lại ở lần bấm sau → KHÔNG cần tắt SketchUp. Hằng số dùng `unless defined?`.
+disable_old(): đổi tên Plugins/phuc_mat_bang_xien.rb (bản cài riêng v1.0–1.2) thành .rb.cu.
+Mô phỏng kiểm thử: Ruby thường + mock Sketchup::Http/UI (không nằm trong kho). CHƯA chạy trên SketchUp thật.
 
-## Khi sửa hoặc thêm plugin
-1. Sửa code trong <Plugin>/MaNguon/. Tăng VERSION + DATE trong file .rb nạp (và dòng "Phiên bản" đầu main.rb).
-2. CHANGELOG.md thêm dòng `- MatBangXien v1.3.0: thay đổi gì` vào đầu mục ngày (thiếu thì dong_goi.py báo lỗi).
-3. `python3 dong_goi.py` → tạo lại capnhat.json, .rbz và /mnt/project-files/<Plugin>_SketchUp.zip. Commit, push main.
-4. Báo người dùng: mở Extensions > Mặt bằng xiên là thấy "🔔 Có bản mới", bấm "⬇ Cập nhật ngay", tắt mở lại SketchUp.
-   Chỉ gửi zip khi cài lần đầu hoặc đổi tên file/thư mục nạp.
+## Thêm tool mới
+1. Tạo MaNguon/phuc_botool/tools/<Id>/main.rb (+ dialog.html nếu cần), module riêng `PhucBoTool::<Id>` có `self.show`.
+   Đầu file:
+   ```
+   # encoding: UTF-8
+   # @name: Tên hiện trong bảng
+   # @group: Nhóm (Diễn họa, Mô hình, Xuất file...)
+   # @desc: Một dòng mô tả ngắn.
+   # @version: 1.0.0
+   # @date: 2026-11-26
+   # @icon: layers          (tên icon Lucide có trong icons.js)
+   # @module: PhucBoTool::<Id>
+   ```
+   Không đăng ký menu/extension riêng trong tool (bảng lo). Không dùng hằng số VERSION (đọc @version từ file).
+2. CHANGELOG.md thêm `- <Id> v1.0.0: ...` (thiếu thì dong_goi.py báo lỗi).
+
+## Khi sửa tool / bảng
+1. Sửa code. Tăng @version + @date của tool đó; sửa bảng thì tăng @version + @date đầu launcher.rb.
+2. CHANGELOG.md thêm dòng vào đầu mục ngày: `- MatBangXien v1.4.0: ...` hoặc `- Bộ Tool SketchUp v1.1.0: ...`.
+3. `python3 dong_goi.py` → capnhat.json, BoToolSketchUp.rbz, /mnt/project-files/BoToolSketchUp.zip. Commit, push main.
+4. Báo người dùng: mở bảng Bộ Tool là thấy "🔔 Có bản mới", bấm "⬇ Cập nhật ngay" (không cần tắt SketchUp).
+   Chỉ gửi zip khi cài lần đầu hoặc khi đổi phuc_botool.rb (file nạp).
 5. Tự cập nhật CLAUDE.md + CHANGELOG.md sau mỗi việc, không cần nhắc.
 
-## Plugin "Mặt bằng xiên" (MatBangXien)
-v1.2.0 (2026-11-26): chuyển từ kho BoToolPhotoshop (thư mục 3_SketchUp) sang kho này; người dùng phải gỡ bản cũ và
+## Tool "Mặt bằng xiên" (tools/MatBangXien, module PhucBoTool::MatBangXien)
+v1.3.0 (2026-11-26): chuyển vào Bộ Tool, bỏ khối tự cập nhật riêng và menu riêng; link "Mở Bộ Tool SketchUp" trong hộp thoại.
+Lịch sử: v1.2.0 (2026-11-26): chuyển từ kho BoToolPhotoshop (thư mục 3_SketchUp) sang kho này; người dùng phải gỡ bản cũ và
 cài lại .rbz một lần (bản v1.1.0 cũ trỏ cập nhật về kho Photoshop, nay đã xoá thư mục đó). CHƯA chạy trên SketchUp thật.
-Cơ chế cập nhật (main.rb check_update/do_update): Sketchup::Http::Request lấy sha qua api.github.com/repos/<REPO>/commits/main
-(lỗi thì dùng main/), đọc raw <sha>/MatBangXien/capnhat.json, so phiên bản, tải hết các file trong "files"
-từ raw <sha>/MatBangXien/MaNguon/<file> rồi mới ghi đè vào thư mục Plugins (File.dirname(__dir__)); tự kiểm tra lúc mở hộp thoại.
-Không tự nạp lại code (VERSION là hằng số) nên phải khởi động lại SketchUp. Người dùng: SketchUp 2021, kiến trúc, muốn ảnh mặt bằng xiên
+Người dùng: SketchUp 2021, kiến trúc, muốn ảnh mặt bằng xiên
 (plan oblique) như ref: nền đen, phần cắt trắng, nét mạnh nhạt, có hạt; thêm ref vẽ tay (nền giấy, nét chì mảnh,
-mặt bằng xoay 45°, đổ thẳng xuống, cắt nét đậm, bút bi xanh). Phiên bản ở VERSION/DATE trong phuc_mat_bang_xien.rb.
+mặt bằng xoay 45°, đổ thẳng xuống, cắt nét đậm, bút bi xanh). Phiên bản ở dòng @version đầu main.rb.
 Cách làm (main.rb): add_group(vùng chọn) → copy → explode (bản gốc giữ nguyên), bản sao (attribute phuc_mbx/copy)
 đặt lệch sang phải ox; transformation = shear quanh zmin (zaxis = (-k·cosθ, -k·sinθ, 1)) × xoay quanh tâm;
 section plane riêng trong group (attribute cut) ở zc, pháp tuyến (0,0,-1) (ô "Lật" nếu ngược, CHƯA kiểm chứng chiều);
